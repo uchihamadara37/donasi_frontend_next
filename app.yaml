@@ -1,12 +1,4 @@
-runtime: custom
-
-env: flex
-
-service: donasi-app
+runtime: nodejs20
 
 env_variables:
-  NEXT_PUBLIC_URL_SERVER: "${_NEXT_PUBLIC_URL_SERVER}"
-
-automatic_scaling:
-  min_num_instances: 1
-  max_num_instances: 1
+  NEXT_PUBLIC_URL_SERVER: "https://donasi-backend-948060519163.asia-southeast2.run.app"
