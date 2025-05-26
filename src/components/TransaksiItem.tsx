@@ -21,7 +21,7 @@ export const TransaksiItem: React.FC<{
     transaction: TransaksiItemProps
 }> = ({ transaction }) => {
 
-    const { user, accessToken } = useAuth();
+    const { user, accessToken, refreshAccessTokenAndUser } = useAuth();
 
     const [checked, setChecked] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
@@ -42,6 +42,10 @@ export const TransaksiItem: React.FC<{
                 }),
                 credentials: 'include', 
             });
+            if (response.status === 403) {
+                refreshAccessTokenAndUser()
+            }
+
             if (!response.ok) {
                 throw new Error('Failed to fetch transaction history');
             }
@@ -68,6 +72,10 @@ export const TransaksiItem: React.FC<{
                 },
                 credentials: 'include', 
             });
+            if (response.status === 403) {
+                refreshAccessTokenAndUser()
+            }
+
             if (!response.ok) {
                 throw new Error('Failed to delete transaction history');
             }

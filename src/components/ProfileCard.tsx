@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { UserProfile } from '@/interfaces'; // Asumsi UserProfile sudah ada dan memiliki 'avatar?: string | null;'
+import { BaseUser, UserProfile } from '@/interfaces'; // Asumsi UserProfile sudah ada dan memiliki 'avatar?: string | null;'
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,6 +25,7 @@ import Image from 'next/image';
 
 // Asumsi URL_SERVER sudah didefinisikan di .env.local
 import { URL_SERVER } from '@/interfaces';
+import { get } from 'http';
 
 // --- Zod Schema for Edit Profile Form ---
 const editProfileSchema = z.object({
@@ -44,18 +45,18 @@ interface EditProfileFormValues {
   clearAvatar?: boolean;
 }
 
-interface ProfileCardProps {
-  user: UserProfile | null;
-}
+// interface ProfileCardProps {
+//   user: UserProfile | null;
+// }
 
-const ProfileCard: React.FC<ProfileCardProps> = ({ user }) => {
-  const {logout, accessToken } = useAuth(); // Ambil accessToken dari context
+const ProfileCard = () => {
+  const {logout, accessToken, refreshAccessTokenAndUser, user } = useAuth(); // Ambil accessToken dari context
   const [isModalOpen, setIsModalOpen] = useState(false); // State untuk mengontrol buka/tutup modal
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null); // State untuk preview gambar
   const [formError, setFormError] = useState<string | null>(null); // State untuk error form
   const [formLoading, setFormLoading] = useState(false); // State untuk loading form
 
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(user); // Local state untuk user, bisa diupdate setelah edit
+  const [currentUser, setCurrentUser] = useState<BaseUser | null>(user); // Local state untuk user, bisa diupdate setelah edit
 
   const [loadingInteractive, setLoadingInteractive] = useState(false);
 
@@ -150,6 +151,10 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ user }) => {
       });
 
       const result = await response.json();
+
+      if (response.status === 403) {
+        refreshAccessTokenAndUser(); // Coba refresh token jika 403
+      }
 
       if (!response.ok) {
         throw new Error(result.error || 'Failed to update profile');

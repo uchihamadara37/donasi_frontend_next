@@ -29,7 +29,7 @@ import { URL_SERVER } from '@/interfaces';
 const UserList: React.FC<UserListProps> = ({ users, onDonateClick, currentUser }) => {
   const otherUsers = users.filter(user => user.id !== currentUser?.id);
 
-  const { accessToken } = useAuth();
+  const { accessToken, refreshAccessTokenAndUser } = useAuth();
 
   const [loadingInteractive, setLoadingInteractive] = useState(false);
 
@@ -57,6 +57,10 @@ const UserList: React.FC<UserListProps> = ({ users, onDonateClick, currentUser }
           },
           credentials: 'include', 
         });
+        if (response.status === 403) {
+          refreshAccessTokenAndUser();
+        }
+
         if (!response.ok) {
           throw new Error('Failed to fetch transaction history');
         }
@@ -81,8 +85,14 @@ const UserList: React.FC<UserListProps> = ({ users, onDonateClick, currentUser }
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${accessToken}`, // Assuming you have an access token
           },
+          
           credentials: 'include', 
         });
+
+        if (response.status === 403) {
+          refreshAccessTokenAndUser();
+        }
+
         if (!response.ok) {
           throw new Error('Failed to fetch transaction history');
         }
@@ -99,8 +109,6 @@ const UserList: React.FC<UserListProps> = ({ users, onDonateClick, currentUser }
     fetchTransactionHistory();
     getAllTransaksi();
   }, [subPage, accessToken, currentUser?.id]);
-
-
 
   return (
     <div className="bg-slate-200 shadow-md rounded-lg p-6">

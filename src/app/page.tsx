@@ -234,7 +234,7 @@ export default function Home() {
 
         <div className="w-80  p-4">
           <div className="flex flex-col">
-            <ProfileCard user={currentUser} />
+            <ProfileCard/>
             <BalanceCard
               balance={currentUser.saldo}
               onTopUpClick={handleOpenTopUpModal}
