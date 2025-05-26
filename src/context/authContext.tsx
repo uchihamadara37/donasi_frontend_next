@@ -2,14 +2,14 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react"
-import { BaseUser } from "@/interfaces" // Asumsi BaseUser structure is defined
+import { BaseUser, UserProfile } from "@/interfaces" // Asumsi BaseUser structure is defined
 
 
 type AuthContextType = {
-    user: BaseUser | null;
+    user: UserProfile | null;
     loading: boolean; // Indicates if auth state is being loaded/checked
     accessToken: string | null;
-    login: (accessToken: string, user: BaseUser) => void;
+    login: (accessToken: string, user: UserProfile) => void;
     logout: () => void;
     // This function now explicitly aims to refresh the access token AND user data
     // by relying on the HTTP-only refresh token cookie managed by the backend.
@@ -31,7 +31,7 @@ import { URL_SERVER } from "@/interfaces"; // Adjust the import path as necessar
 export const useAuth = () => useContext(AuthContext)
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-    const [user, setUser] = useState<BaseUser | null>(null);
+    const [user, setUser] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true); // Manages loading state for auth operations
     const [accessToken, setAccessToken] = useState<string | null>(null);
 
@@ -79,7 +79,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, [refreshAccessTokenAndUser]); // Dependency on useCallback ensures it's stable
 
     
-    const login = useCallback((newAccessToken: string, loggedInUser: BaseUser) => {
+    const login = useCallback((newAccessToken: string, loggedInUser: UserProfile) => {
         setLoading(true);
         setAccessToken(newAccessToken);
         setUser(loggedInUser);

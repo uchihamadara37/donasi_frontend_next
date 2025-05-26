@@ -18,8 +18,13 @@ import { URL_SERVER } from "@/interfaces";
 export default function Home() {
 
   const router = useRouter();
+  const {
+    user,
+    accessToken,
+    loading,
+  } = useAuth(); // Ambil user dari context
 
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(user as UserProfile | null); // Cast user to UserProfile or null
   const [otherUsers, setOtherUsers] = useState<UserProfile[]>([]);
   const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
   const [isDonateModalOpen, setIsDonateModalOpen] = useState(false);
@@ -27,14 +32,9 @@ export default function Home() {
 
   const [loadingInteractive, setLoadingInteractive] = useState(false);
 
-  const {
-    user,
-    accessToken,
-    loading,
-  } = useAuth(); // Ambil user dari context
 
 
-  
+
 
   useEffect(() => {
     if (loading) {
@@ -43,26 +43,26 @@ export default function Home() {
     }
 
     const getOtherUsers = async () => {
-    try {
-      const res = await fetch(`${URL_SERVER}/api/users`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-        },
-        credentials: 'include', // Pastikan untuk mengirim cookie
-      });
-      const data = await res.json();
-      console.log("Data other users:", data);
-      if (!res.ok) {
-        throw new Error(data.message || 'Gagal mengambil data pengguna lain');
+      try {
+        const res = await fetch(`${URL_SERVER}/api/users`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
+          },
+          credentials: 'include', // Pastikan untuk mengirim cookie
+        });
+        const data = await res.json();
+        console.log("Data other users:", data);
+        if (!res.ok) {
+          throw new Error(data.message || 'Gagal mengambil data pengguna lain');
+        }
+        setOtherUsers(data);
+      } catch (error) {
+        console.error("Error fetching other users:", error);
+        alert("Gagal mengambil data pengguna lain. Silakan coba lagi.");
       }
-      setOtherUsers(data);
-    } catch (error) {
-      console.error("Error fetching other users:", error);
-      alert("Gagal mengambil data pengguna lain. Silakan coba lagi.");
     }
-  }
 
     if (!accessToken || !user) {
       console.log("refreshToken /home masih kosong");
@@ -105,7 +105,7 @@ export default function Home() {
           body: JSON.stringify({
             saldo: currentUser.saldo + amount,
           }),
-          credentials: 'include', 
+          credentials: 'include',
         });
 
         const updatedUser = await res.json();
@@ -130,7 +130,7 @@ export default function Home() {
               transaksiId: null,
               waktu: new Date().toISOString(),
             }),
-            credentials: 'include', 
+            credentials: 'include',
           });
           const updatedHistory = await res.json();
           if (!res.ok) {
@@ -184,7 +184,7 @@ export default function Home() {
             jumlahDonasi: amount,
             pesanDonasi: message,
           }),
-          credentials: 'include', 
+          credentials: 'include',
         });
         const newTransaksi = await res.json();
         if (!res.ok) {
@@ -234,9 +234,9 @@ export default function Home() {
 
         <div className="w-80  p-4">
           <div className="flex flex-col">
-            <ProfileCard/>
+            <ProfileCard />
             <BalanceCard
-              balance={currentUser.saldo}
+              balance={currentUser.saldo ?? 0}
               onTopUpClick={handleOpenTopUpModal}
             />
           </div>
