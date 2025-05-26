@@ -1,4 +1,5 @@
 runtime: nodejs20
+service: donasi-app
 
 env_variables:
   NEXT_PUBLIC_URL_SERVER: "https://donasi-backend-948060519163.asia-southeast2.run.app"
