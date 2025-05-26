@@ -73,6 +73,7 @@ export default function LoginPage() {
           email: data.email,
           password: data.password
         }),
+        credentials: "include", // Include cookies in the request
       })
 
       const result = await res.json();

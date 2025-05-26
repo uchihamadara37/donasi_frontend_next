@@ -111,7 +111,8 @@ export default function RegisterPage() {
       // Ganti URL ini dengan endpoint API register Anda
       const response = await fetch(`${URL_SERVER}/api/register`, {
         method: 'POST',
-        body: formData, // FormData akan secara otomatis mengatur Content-Type: multipart/form-data
+        body: formData,
+        credentials: 'include' // FormData akan secara otomatis mengatur Content-Type: multipart/form-data
       });
 
       const result = await response.json();
