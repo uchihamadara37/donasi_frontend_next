@@ -6,7 +6,7 @@ import { Input } from './ui/input';
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
-const URL_SERVER = process.env.NEXT_PUBLIC_URL_SERVER;
+import { URL_SERVER } from '@/interfaces';
 
 type TransaksiItemProps = {
     id: string;

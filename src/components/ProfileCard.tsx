@@ -24,7 +24,7 @@ import LoadingOverlay from './LoadingOverlay';
 import Image from 'next/image';
 
 // Asumsi URL_SERVER sudah didefinisikan di .env.local
-const URL_SERVER = process.env.NEXT_PUBLIC_URL_SERVER;
+import { URL_SERVER } from '@/interfaces';
 
 // --- Zod Schema for Edit Profile Form ---
 const editProfileSchema = z.object({

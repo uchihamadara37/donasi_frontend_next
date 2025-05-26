@@ -27,3 +27,5 @@ export interface Transaksi {
   pesanDonasi?: string;  
   waktu: string;
 }
+
+export const URL_SERVER="https://donasi-backend-948060519163.asia-southeast2.run.app"

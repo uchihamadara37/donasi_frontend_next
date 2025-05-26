@@ -12,7 +12,7 @@ import TopUpModal from '@/components/TopUpModal';
 import DonateModal from '@/components/DonateModal';
 import LoadingOverlay from "@/components/LoadingOverlay";
 
-const URL_SERVER = process.env.NEXT_PUBLIC_URL_SERVER;
+import { URL_SERVER } from "@/interfaces";
 
 // Membuat UserProfile dari data API
 export default function Home() {

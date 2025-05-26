@@ -12,6 +12,8 @@ import { useState, useEffect } from "react"; // Import useState untuk preview ga
 import LoadingOverlay from "@/components/LoadingOverlay";
 import Image from "next/image";
 
+import { URL_SERVER } from "@/interfaces";
+
 // Schema Zod yang diperbarui untuk menyertakan avatar
 const schema = z
   .object({
@@ -107,7 +109,7 @@ export default function RegisterPage() {
 
     try {
       // Ganti URL ini dengan endpoint API register Anda
-      const response = await fetch(`${process.env.NEXT_PUBLIC_URL_SERVER}/api/register`, {
+      const response = await fetch(`${URL_SERVER}/api/register`, {
         method: 'POST',
         body: formData, // FormData akan secara otomatis mengatur Content-Type: multipart/form-data
       });

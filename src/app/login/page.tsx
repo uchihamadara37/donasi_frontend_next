@@ -20,7 +20,7 @@ const loginScheme = z.object({
 
 type typeLoginValues = z.infer<typeof loginScheme>
 
-const URL_SERVER = process.env.NEXT_PUBLIC_URL_SERVER;
+import {URL_SERVER} from "@/interfaces";  
 
 export default function LoginPage() {
 

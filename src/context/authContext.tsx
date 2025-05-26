@@ -26,7 +26,7 @@ const AuthContext = createContext<AuthContextType>({
 })
 
 // Ensure this environment variable is set in .env.local
-const URL_SERVER = process.env.NEXT_PUBLIC_URL_SERVER;
+import { URL_SERVER } from "@/interfaces"; // Adjust the import path as necessary
 
 export const useAuth = () => useContext(AuthContext)
 

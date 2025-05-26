@@ -24,7 +24,7 @@ type TransaksiItem = {
     waktu: string;
 }
 
-const URL_SERVER = process.env.NEXT_PUBLIC_URL_SERVER;
+import { URL_SERVER } from '@/interfaces';
 
 const UserList: React.FC<UserListProps> = ({ users, onDonateClick, currentUser }) => {
   const otherUsers = users.filter(user => user.id !== currentUser?.id);
