@@ -1,27 +1,23 @@
-# Stage 1: Build
-FROM node:18 AS builder
+# Base image
+FROM node:20
 
+# Set working directory
 WORKDIR /app
 
+# Copy package files
 COPY package*.json ./
+
+# Install dependencies
 RUN npm install
 
+# Copy all app files
 COPY . .
 
+# Build Next.js app
 RUN npm run build
 
-# Stage 2: Production image
-FROM node:18
-
-WORKDIR /app
-
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.js ./
-
-RUN npm install --omit=dev
-
+# Expose port (App Engine expects 8080)
 EXPOSE 8080
 
-CMD ["npm", "start"]
+# Start the app
+CMD [ "npm", "run", "start" ]
