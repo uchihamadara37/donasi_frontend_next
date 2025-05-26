@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Transaksi, UserProfile } from '@/interfaces';
+import { History, UserProfile } from '@/interfaces';
 import { useAuth } from '@/context/authContext';
 import { TransaksiItem } from './TransaksiItem';
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import LoadingOverlay from './LoadingOverlay';
+import Image from 'next/image';
 
 
 
@@ -14,94 +15,90 @@ interface UserListProps {
   currentUser: UserProfile | null;
 }
 
+type TransaksiItem = {
+    id: string;
+    pengirim: { id: string; name: string };
+    penerima: { id: string; name: string };
+    jumlahDonasi: number;
+    pesanDonasi?: string;
+    waktu: string;
+}
+
 const URL_SERVER = process.env.NEXT_PUBLIC_URL_SERVER;
 
 const UserList: React.FC<UserListProps> = ({ users, onDonateClick, currentUser }) => {
   const otherUsers = users.filter(user => user.id !== currentUser?.id);
 
-  const { user, loading, accessToken } = useAuth();
+  const { accessToken } = useAuth();
 
   const [loadingInteractive, setLoadingInteractive] = useState(false);
 
   const [subPage, setsubPage] = useState("userList");
 
-  const [histories, setHistories] = useState<any[]>([]); // Replace 'any' with your actual history type
-  const [transactions, setTransactions] = useState<any[]>([]);
+  const [histories, setHistories] = useState<History[]>([]); // Replace 'any' with your actual history type
+  const [transactions, setTransactions] = useState<TransaksiItem[]>([]);
 
-  // fetch transaksi donasi
-  const getAllTransaksi = async () => {
-    setLoadingInteractive(true);
-    try {
-      const response = await fetch(`${URL_SERVER}/api/transaksi`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`, // Assuming you have an access token
-        }
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch transaction history');
-      }
-      const data = await response.json();
-      console.log("getAllTransaksi:", data);
 
-      const dataPribadi = data.filter((transaksi: any) => transaksi.pengirim.id === currentUser?.id || transaksi.penerima.id === currentUser?.id);
-      console.log("dataPribadi:", dataPribadi);
-      setTransactions(dataPribadi);
-    } catch (error) {
-      console.error('Error fetching transaction history:', error);
 
-    }
-    setLoadingInteractive(false);
-  };
-  const fetchTransactionHistory = async () => {
-    setLoadingInteractive(true);
-    try {
-      const response = await fetch(`${URL_SERVER}/api/history/${currentUser?.id}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`, // Assuming you have an access token
-        }
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch transaction history');
-      }
-      const data = await response.json();
-      console.log("Transaction history data:", data);
-      setHistories(data);
-    } catch (error) {
-      console.error('Error fetching transaction history:', error);
-    }
-    setLoadingInteractive(false);
-  };
 
-  
 
 
   useEffect(() => {
+
+    // fetch transaksi donasi
+    const getAllTransaksi = async () => {
+      setLoadingInteractive(true);
+      try {
+        const response = await fetch(`${URL_SERVER}/api/transaksi`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`, // Assuming you have an access token
+          }
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch transaction history');
+        }
+        const data = await response.json();
+        console.log("getAllTransaksi:", data);
+
+        const dataPribadi = data.filter((transaksi: TransaksiItem) => transaksi.pengirim.id === String(currentUser?.id) || transaksi.penerima.id === String(currentUser?.id));
+        console.log("dataPribadi:", dataPribadi);
+        setTransactions(dataPribadi);
+      } catch (error) {
+        console.error('Error fetching transaction history:', error);
+
+      }
+      setLoadingInteractive(false);
+    };
+    const fetchTransactionHistory = async () => {
+      setLoadingInteractive(true);
+      try {
+        const response = await fetch(`${URL_SERVER}/api/history/${currentUser?.id}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`, // Assuming you have an access token
+          }
+        });
+        if (!response.ok) {
+          throw new Error('Failed to fetch transaction history');
+        }
+        const data = await response.json();
+        console.log("Transaction history data:", data);
+        setHistories(data);
+      } catch (error) {
+        console.error('Error fetching transaction history:', error);
+      }
+      setLoadingInteractive(false);
+    };
     // Fetch transaction history for the current user
     console.log("Fetching transaction history and transactions...");
     fetchTransactionHistory();
     getAllTransaksi();
-  }, [subPage]);
+  }, [subPage, accessToken, currentUser?.id]);
 
-  const onPageCheckUserList = () => {
-    if (subPage === "transactionHistory") {
-      setsubPage("userList");
-    }
 
-  };
-  const onPageCheckHistory = () => {
-    if (subPage === "userList") {
-      setsubPage("transactionHistory");
-    }
-  };
-  // const onPageCheckHistory = () => {
-  //   if (subPage === "userList") {
-  //     setsubPage("transactionHistory");
-  //   }
-  // };
 
   return (
     <div className="bg-slate-200 shadow-md rounded-lg p-6">
@@ -138,7 +135,7 @@ const UserList: React.FC<UserListProps> = ({ users, onDonateClick, currentUser }
                 >
                   <div className="flex items-center space-x-3">
                     {user.avatar ? (
-                      <img
+                      <Image
                         src={user.avatar}
                         alt={user.name}
                         className="w-10 h-10 rounded-full object-cover"
@@ -171,7 +168,7 @@ const UserList: React.FC<UserListProps> = ({ users, onDonateClick, currentUser }
                 <div className="">
                   <h2 className=" font-normal text-gray-700 mb-4">Ini adalah riwayat aktivitas saldo anda. Untuk mengecek aktivitas transaksi keluar atau donasi silakan klik pada navigasi transaksi di atas.</h2>
                   <ul className="space-y-4">
-                    {histories.map((history, index) => (
+                    {histories.map((history,) => (
                       <li
                         key={history.id}
                         className="flex items-center justify-between shadow-sm p-3 bg-slate-100 rounded-lg hover:bg-slate-300 transition duration-150 ease-in-out"

@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [loading, setLoading] = useState(true); // Manages loading state for auth operations
     const [accessToken, setAccessToken] = useState<string | null>(null);
 
-    const refreshAccessTokenAndUser = useCallback(async (onSuccess?: () => void): Promise<void> => {
+    const refreshAccessTokenAndUser = useCallback(async (): Promise<void> => {
         setLoading(true); // Indicate that a session check/refresh is in progress
         console.log("Attempting to refresh access token and user data from backend via cookie...");
 
@@ -54,7 +54,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (res.ok) {
                 setAccessToken(data.accessToken);
                 setUser(data.user); // Update user state with fresh data from backend
-                onSuccess && onSuccess();
+                // onSuccess && onSuccess();
                 console.log("Session refreshed successfully. User and AccessToken updated.");
             } else if (res.status === 401 || res.status === 403) {
                 console.log("Session expired or invalid (401/403). Clearing frontend state.");
@@ -74,7 +74,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         } finally {
             setLoading(false); // Always set loading to false when the session check/refresh attempt is over
         }
-    }, [URL_SERVER]); // Dependency array: only re-create if URL_SERVER changes
+    }, []); // Dependency array: only re-create if URL_SERVER changes
 
     // useEffect to perform initial session check on component mount
     useEffect(() => {
@@ -115,7 +115,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             setLoading(false);
             console.log("Frontend state cleared for logout.");
         }
-    }, [URL_SERVER]);
+    }, []);
 
     // Memoize the context value to prevent unnecessary re-renders
     const authContextValue = React.useMemo(() => ({

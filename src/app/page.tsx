@@ -1,28 +1,18 @@
 "use client"
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/context/authContext";
 
 import React, { useState, useEffect } from 'react';
-import { BaseUser, UserProfile } from '@/interfaces';
+import { UserProfile } from '@/interfaces';
 import ProfileCard from '@/components/ProfileCard';
 import BalanceCard from '@/components/BalanceCard';
 import UserList from '@/components/UserList';
 import TopUpModal from '@/components/TopUpModal';
 import DonateModal from '@/components/DonateModal';
-import { get } from "http";
 import LoadingOverlay from "@/components/LoadingOverlay";
 
 const URL_SERVER = process.env.NEXT_PUBLIC_URL_SERVER;
-
-// Data dummy BARU untuk Current User (berdasarkan JSON Anda, tanpa password & token)
-const dummyCurrentUserFromAPI = { // Ini data mentah yang mungkin Anda dapat
-  id: 2,
-  name: "and",
-  email: "and@and.com",
-  // password tidak disimpan di state frontend untuk UI
-};
 
 // Membuat UserProfile dari data API
 export default function Home() {
@@ -41,13 +31,18 @@ export default function Home() {
     user,
     accessToken,
     loading,
-    refreshAccessTokenAndUser,
-    login,
-    logout,
   } = useAuth(); // Ambil user dari context
 
 
-  const getOtherUsers = async () => {
+  
+
+  useEffect(() => {
+    if (loading) {
+      console.log("masih loading /");
+      return;
+    }
+
+    const getOtherUsers = async () => {
     try {
       const res = await fetch(`${URL_SERVER}/api/users`, {
         method: 'GET',
@@ -68,12 +63,6 @@ export default function Home() {
     }
   }
 
-  useEffect(() => {
-    if (loading) {
-      console.log("masih loading /");
-      return;
-    }
-
     if (!accessToken || !user) {
       console.log("refreshToken /home masih kosong");
       router.replace('/login')
@@ -87,7 +76,8 @@ export default function Home() {
       // verifyRefreshToken(refreshToken)
     }
 
-  }, [loading]);
+  }, [loading, accessToken, user, router]);
+  // Jika user berubah, update currentUser
 
 
 

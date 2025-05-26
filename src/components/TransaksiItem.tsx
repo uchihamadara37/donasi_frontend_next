@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from 'react';
-import { Transaksi, UserProfile } from '@/interfaces';
+import React, { useState } from 'react';
 import { useAuth } from '@/context/authContext';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -9,17 +8,25 @@ import { id } from "date-fns/locale";
 
 const URL_SERVER = process.env.NEXT_PUBLIC_URL_SERVER;
 
+type TransaksiItemProps = {
+    id: string;
+    pengirim: { id: string; name: string };
+    penerima: { id: string; name: string };
+    jumlahDonasi: number;
+    pesanDonasi?: string;
+    waktu: string;
+}
 
 export const TransaksiItem: React.FC<{
-    transaction: any
+    transaction: TransaksiItemProps
 }> = ({ transaction }) => {
 
-    const { user, loading, accessToken } = useAuth();
+    const { user, accessToken } = useAuth();
 
     const [checked, setChecked] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
     const [keterangan, setKeterangan] = useState(transaction.pesanDonasi);
-    const [transaksi, setTransaksi] = useState<any | null>(transaction);
+    const [transaksi, setTransaksi] = useState<TransaksiItemProps | null>(transaction);
 
     // const [transaction, setTransaction] = useState<any[]>([]);
     const editTransactionById = async () => {
@@ -80,10 +87,10 @@ export const TransaksiItem: React.FC<{
             >
                 <div className="flex items-center space-x-3">
                     <span className=" font-medium">{
-                        transaksi.penerima.id === user?.id ? "Dikirim oleh" : "Kepada"
+                        transaksi.penerima.id === String(user?.id) ? "Dikirim oleh" : "Kepada"
                     }</span>
-                    <span className={`${transaksi.penerima.id === user?.id ? "text-red-500" : "text-green-500"} font-medium`}> {
-                        transaksi.penerima.id === user?.id ? transaksi.pengirim.name : transaksi.penerima.name
+                    <span className={`${transaksi.penerima.id === String(user?.id) ? "text-red-500" : "text-green-500"} font-medium`}> {
+                        transaksi.penerima.id === String(user?.id) ? transaksi.pengirim.name : transaksi.penerima.name
                     }</span>
                     <span className="text-slate-600 font-normal">{transaksi.pesanDonasi ? transaksi.pesanDonasi : "Tanpa keterangan"}</span>
                 </div>
@@ -106,7 +113,7 @@ export const TransaksiItem: React.FC<{
                                 placeholder='Edit Keterangan ...'
                             />
                         )}
-                        {transaksi.penerima.id === user?.id ? (
+                        {transaksi.penerima.id === String(user?.id) ? (
                             <span className="text-red-500 font-normal">Anda tidak bisa mengedit pesan dan menghapus history ini, karena anda adalah penerima donasi!</span>
                         ) : (
                             <Button
@@ -123,7 +130,7 @@ export const TransaksiItem: React.FC<{
                         )}
                     </div>
                     <div className="">
-                        {transaksi.penerima.id !== user?.id && (
+                        {transaksi.penerima.id !== String(user?.id) && (
                             <Button
                                 className='bg-red-500 text-white'
                                 onClick={deleteTransactionById}

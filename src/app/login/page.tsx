@@ -27,11 +27,8 @@ export default function LoginPage() {
   const router = useRouter();
   const {
     user,
-    accessToken,
     loading,
     login,
-    logout,
-    refreshAccessTokenAndUser,
   } = useAuth(); // Ambil user dari context
 
   const [loadingInteractive, setLoadingInteractive] = useState(false);
@@ -53,7 +50,7 @@ export default function LoginPage() {
       }
     }
 
-  }, [loading]);
+  }, [loading, user]);
 
   const {
     register: loginField,
@@ -91,7 +88,7 @@ export default function LoginPage() {
       } else {
         alert(`Login failed: \n${result.message}`)
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Login gagal:", error);
     }
     setLoadingInteractive(false);

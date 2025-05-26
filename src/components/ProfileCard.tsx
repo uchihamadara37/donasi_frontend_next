@@ -11,7 +11,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogClose // Import DialogClose
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +21,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import LoadingOverlay from './LoadingOverlay';
+import Image from 'next/image';
 
 // Asumsi URL_SERVER sudah didefinisikan di .env.local
 const URL_SERVER = process.env.NEXT_PUBLIC_URL_SERVER;
@@ -49,7 +49,7 @@ interface ProfileCardProps {
 }
 
 const ProfileCard: React.FC<ProfileCardProps> = ({ user }) => {
-  const { login, logout, refreshAccessTokenAndUser, accessToken } = useAuth(); // Ambil accessToken dari context
+  const {logout, accessToken } = useAuth(); // Ambil accessToken dari context
   const [isModalOpen, setIsModalOpen] = useState(false); // State untuk mengontrol buka/tutup modal
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null); // State untuk preview gambar
   const [formError, setFormError] = useState<string | null>(null); // State untuk error form
@@ -164,10 +164,10 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ user }) => {
       setIsModalOpen(false); // Tutup modal
       reset(); // Reset form setelah sukses (opsional, tergantung UX)
 
-    } catch (err: any) {
+    } catch (err: unknown ) {
 
       console.error("Error updating profile:", err);
-      setFormError(err.message || "Terjadi kesalahan saat memperbarui profil. Cobalah menggunakan gambar berukuran lebih kecil");
+      setFormError("Terjadi kesalahan saat memperbarui profil. Cobalah menggunakan gambar berukuran lebih kecil");
     } finally {
       setFormLoading(false);
 
@@ -184,7 +184,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ user }) => {
       <div className="flex flex-col items-center">
         {/* Avatar Display */}
         {currentUser.avatar ? (
-          <img
+          <Image
             src={currentUser.avatar}
             alt={currentUser.name}
             className="w-30 h-30 rounded-full object-cover mt-5"
@@ -223,7 +223,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ user }) => {
               <DialogHeader>
                 <DialogTitle>Edit Profile</DialogTitle>
                 <DialogDescription>
-                  Make changes to your profile here. Click save when you're done.
+                  Make changes to your profile here. Click save when you&apos;re done.
                 </DialogDescription>
               </DialogHeader>
               <form onSubmit={handleSubmit(onSubmitEditProfile)} className="flex flex-col gap-2 py-4">
@@ -258,7 +258,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ user }) => {
                 {/* Avatar Preview & Clear Button */}
                 {(avatarPreview || currentUser.avatar) && (
                   <div className="col-span-4 flex flex-col items-center gap-2">
-                    <img
+                    <Image
                       src={avatarPreview || currentUser.avatar || ''}
                       alt="Avatar Preview"
                       className="w-24 h-24 rounded-full object-cover border border-gray-300 shadow-sm"

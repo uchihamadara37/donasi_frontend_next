@@ -8,10 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useAuth } from "@/context/authContext"; // Asumsi ini ada dan relevan
-import { BaseUser } from "@/interfaces"; // Asumsi ini ada dan relevan
 import { useState, useEffect } from "react"; // Import useState untuk preview gambar
 import LoadingOverlay from "@/components/LoadingOverlay";
+import Image from "next/image";
 
 // Schema Zod yang diperbarui untuk menyertakan avatar
 const schema = z
@@ -60,7 +59,6 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
-    setValue, // Digunakan untuk mengatur nilai field secara manual, khususnya untuk file
     watch, // Digunakan untuk memantau perubahan nilai field
     formState: { errors },
   } = useForm<formValues>({ // Tentukan tipe generik untuk useForm
@@ -124,9 +122,9 @@ export default function RegisterPage() {
       console.log("Pendaftaran berhasil:", result);
       router.push("/");
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error pendaftaran", err);
-      setError(err.message || "Terjadi kesalahan saat pendaftaran.");
+      setError("Terjadi kesalahan saat pendaftaran.");
     } finally {
       setLoading(false);
 
@@ -203,7 +201,7 @@ export default function RegisterPage() {
               {avatarPreview && (
                 <div className="mt-4 flex flex-col items-center">
                   <p className="text-sm text-gray-600 mb-2">Image Preview:</p>
-                  <img src={avatarPreview} alt="Avatar Preview" className="w-24 h-24 object-cover rounded-full border border-gray-300 shadow-sm" />
+                  <Image src={avatarPreview} alt="Avatar Preview" className="w-24 h-24 object-cover rounded-full border border-gray-300 shadow-sm" />
                 </div>
               )}
             </div>
