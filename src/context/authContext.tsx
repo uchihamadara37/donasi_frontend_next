@@ -54,7 +54,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (res.ok) {
                 setAccessToken(data.accessToken);
                 setUser(data.user); // Update user state with fresh data from backend
-                // onSuccess && onSuccess();
                 console.log("Session refreshed successfully. User and AccessToken updated.");
             } else if (res.status === 401 || res.status === 403) {
                 console.log("Session expired or invalid (401/403). Clearing frontend state.");
@@ -62,13 +61,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 setAccessToken(null);
             } else {
                 console.error("Failed to refresh token with unexpected status:", res.status, data.message || "Unknown error");
-                // For other errors, we should also clear the session for security/consistency
                 setUser(null);
                 setAccessToken(null);
             }
         } catch (error) {
             console.error("Network or other error during token refresh:", error);
-            // If there's a network error, assume the session might be broken or the server is unreachable
             setUser(null);
             setAccessToken(null);
         } finally {
