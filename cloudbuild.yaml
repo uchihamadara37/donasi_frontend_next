@@ -11,6 +11,7 @@ steps:
       - '-c'
       - |
         export NEXT_PUBLIC_URL_SERVER=${_NEXT_PUBLIC_URL_SERVER}
+        echo "NEXT_PUBLIC_URL_SERVER: $NEXT_PUBLIC_URL_SERVER"
         npm run build
 
   # Deploy ke App Engine
