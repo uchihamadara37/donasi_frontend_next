@@ -1,13 +1,14 @@
 steps:
   # Build Docker image
   - name: 'gcr.io/cloud-builders/docker'
-    args: [
-      'build',
-      '-t', 'gcr.io/$PROJECT_ID/donasi-frontend',
-      # Tambahkan baris ini untuk meneruskan build argument:
-      '--build-arg', 'NEXT_PUBLIC_URL_SERVER_ARG=${_NEXT_PUBLIC_URL_SERVER}',
-      '.'  # Path ke Dockerfile context
-    ]
+    args: 
+      - 'build' 
+      - '-t' 
+      - 'gcr.io/$PROJECT_ID/donasi-frontend'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_URL_SERVER_ARG=${_NEXT_PUBLIC_URL_SERVER}'
+      - '.'
+    
 
   # Push Docker image ke Container Registry
   - name: 'gcr.io/cloud-builders/docker'
@@ -19,8 +20,6 @@ steps:
   - name: 'gcr.io/cloud-builders/gcloud'
     args: [
       'app', 'deploy', '--quiet'
-      # Anda bisa juga menambahkan --version jika ingin menamai versi secara spesifik
-      # '--version', 'v1-cloudbuild-${SHORT_SHA}'
     ]
 
 options:
