@@ -71,7 +71,7 @@ export default function LoginPage() {
         },
         body: JSON.stringify({
           email: data.email,
-          password: data.password
+          password: data.password //
         }),
         credentials: "include", // Include cookies in the request
       })
