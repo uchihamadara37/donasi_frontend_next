@@ -135,7 +135,7 @@ const UserList: React.FC<UserListProps> = ({ users, onDonateClick, currentUser }
                 >
                   <div className="flex items-center space-x-3">
                     {user.avatar ? (
-                      <Image
+                      <img
                         src={user.avatar}
                         alt={user.name}
                         className="w-10 h-10 rounded-full object-cover"

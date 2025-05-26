@@ -184,7 +184,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ user }) => {
       <div className="flex flex-col items-center">
         {/* Avatar Display */}
         {currentUser.avatar ? (
-          <Image
+          <img
             src={currentUser.avatar}
             alt={currentUser.name}
             className="w-30 h-30 rounded-full object-cover mt-5"
