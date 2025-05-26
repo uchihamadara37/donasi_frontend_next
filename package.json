@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack -p 5000",
-    "build": "echo $NEXT_PUBLIC_URL_SERVER && next build",
+    "build": " next build && echo $NEXT_PUBLIC_URL_SERVER",
     "start": "next start -p 8080",
     "lint": "next lint"
   },
