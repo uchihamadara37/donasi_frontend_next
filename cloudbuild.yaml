@@ -1,9 +1,10 @@
 steps:
   # Install dependencies
-  - name: 'gcr.io/cloud-builders/nodejs'
+  - name: 'gcr.io/cloud-builders/nodejs:20'
     args: ['npm', 'install']
 
-  - name: 'gcr.io/cloud-builders/nodejs'
+  # Build Next.js
+  - name: 'gcr.io/cloud-builders/nodejs:20'
     args: ['npm', 'run', 'build']
 
 
