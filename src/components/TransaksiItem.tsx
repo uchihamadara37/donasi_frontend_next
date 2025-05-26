@@ -10,8 +10,8 @@ import { URL_SERVER } from '@/interfaces';
 
 type TransaksiItemProps = {
     id: string;
-    pengirim: { id: string; name: string };
-    penerima: { id: string; name: string };
+    pengirim: { id: number; name: string };
+    penerima: { id: number; name: string };
     jumlahDonasi: number;
     pesanDonasi?: string;
     waktu: string;
@@ -97,10 +97,10 @@ export const TransaksiItem: React.FC<{
             >
                 <div className="flex items-center space-x-3">
                     <span className=" font-medium">{
-                        transaksi.penerima.id === String(user?.id) ? "Dikirim oleh" : "Kepada"
+                        transaksi.penerima.id === user?.id ? "Dikirim oleh" : "Kepada"
                     }</span>
-                    <span className={`${transaksi.penerima.id === String(user?.id) ? "text-red-500" : "text-green-500"} font-medium`}> {
-                        transaksi.penerima.id === String(user?.id) ? transaksi.pengirim.name : transaksi.penerima.name
+                    <span className={`${transaksi.penerima.id === user?.id ? "text-red-500" : "text-green-500"} font-medium`}> {
+                        transaksi.penerima.id === user?.id ? transaksi.pengirim.name : transaksi.penerima.name
                     }</span>
                     <span className="text-slate-600 font-normal">{transaksi.pesanDonasi ? transaksi.pesanDonasi : "Tanpa keterangan"}</span>
                 </div>
@@ -123,7 +123,7 @@ export const TransaksiItem: React.FC<{
                                 placeholder='Edit Keterangan ...'
                             />
                         )}
-                        {transaksi.penerima.id === String(user?.id) ? (
+                        {transaksi.penerima.id === user?.id ? (
                             <span className="text-red-500 font-normal">Anda tidak bisa mengedit pesan dan menghapus history ini, karena anda adalah penerima donasi!</span>
                         ) : (
                             <Button
@@ -140,7 +140,7 @@ export const TransaksiItem: React.FC<{
                         )}
                     </div>
                     <div className="">
-                        {transaksi.penerima.id !== String(user?.id) && (
+                        {transaksi.penerima.id !== user?.id && (
                             <Button
                                 className='bg-red-500 text-white'
                                 onClick={deleteTransactionById}

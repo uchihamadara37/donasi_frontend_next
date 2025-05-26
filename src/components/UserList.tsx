@@ -17,8 +17,8 @@ interface UserListProps {
 
 type TransaksiItem = {
     id: string;
-    pengirim: { id: string; name: string };
-    penerima: { id: string; name: string };
+    pengirim: { id: number; name: string };
+    penerima: { id: number; name: string };
     jumlahDonasi: number;
     pesanDonasi?: string;
     waktu: string;
@@ -67,9 +67,9 @@ const UserList: React.FC<UserListProps> = ({ users, onDonateClick, currentUser }
         const data = await response.json();
         console.log("getAllTransaksi:", data);
 
-        const dataPribadi = data.filter((transaksi: TransaksiItem) => transaksi.pengirim.id === String(currentUser?.id) || transaksi.penerima.id === String(currentUser?.id));
-        console.log("dataPribadi:", dataPribadi);
-        setTransactions(dataPribadi);
+        const transaksiPribadi = data.filter((transaksi: TransaksiItem) => transaksi.pengirim.id === currentUser?.id || transaksi.penerima.id === currentUser?.id);
+        console.log("transaksiPribadi:", transaksiPribadi);
+        setTransactions(transaksiPribadi);
       } catch (error) {
         console.error('Error fetching transaction history:', error);
 
