@@ -1,0 +1,15 @@
+runtime: nodejs20
+
+instance_class: F1
+
+env_variables:
+  NEXT_PUBLIC_URL_SERVER: '${_NEXT_PUBLIC_URL_SERVER}'
+
+automatic_scaling:
+  target_cpu_utilization: 0.65
+  min_instances: 0
+  max_instances: 2
+
+handlers:
+  - url: /.*
+    script: auto

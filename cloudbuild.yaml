@@ -1,11 +1,11 @@
 steps:
   # Install dependencies
-  - name: 'gcr.io/cloud-builders/npm'
-    args: ['install']
+  - name: 'gcr.io/cloud-builders/nodejs'
+    args: ['npm', 'install']
 
-  # Build Next.js
-  - name: 'gcr.io/cloud-builders/npm'
-    args: ['run', 'build']
+  - name: 'gcr.io/cloud-builders/nodejs'
+    args: ['npm', 'run', 'build']
+
 
   # Replace variable di app.template.yaml jadi app.yaml
   - name: 'gcr.io/cloud-builders/gcloud'
