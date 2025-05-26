@@ -1,103 +1,278 @@
+"use client"
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
+import { useAuth } from "@/context/authContext";
+
+import React, { useState, useEffect } from 'react';
+import { BaseUser, UserProfile } from '@/interfaces';
+import ProfileCard from '@/components/ProfileCard';
+import BalanceCard from '@/components/BalanceCard';
+import UserList from '@/components/UserList';
+import TopUpModal from '@/components/TopUpModal';
+import DonateModal from '@/components/DonateModal';
+import { get } from "http";
+import LoadingOverlay from "@/components/LoadingOverlay";
+
+const URL_SERVER = process.env.NEXT_PUBLIC_URL_SERVER;
+
+// Data dummy BARU untuk Current User (berdasarkan JSON Anda, tanpa password & token)
+const dummyCurrentUserFromAPI = { // Ini data mentah yang mungkin Anda dapat
+  id: 2,
+  name: "and",
+  email: "and@and.com",
+  // password tidak disimpan di state frontend untuk UI
+};
+
+// Membuat UserProfile dari data API
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  const router = useRouter();
+
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [otherUsers, setOtherUsers] = useState<UserProfile[]>([]);
+  const [isTopUpModalOpen, setIsTopUpModalOpen] = useState(false);
+  const [isDonateModalOpen, setIsDonateModalOpen] = useState(false);
+  const [selectedUserForDonation, setSelectedUserForDonation] = useState<UserProfile | null>(null);
+
+  const [loadingInteractive, setLoadingInteractive] = useState(false);
+
+  const {
+    user,
+    accessToken,
+    loading,
+    refreshAccessTokenAndUser,
+    login,
+    logout,
+  } = useAuth(); // Ambil user dari context
+
+
+  const getOtherUsers = async () => {
+    try {
+      const res = await fetch(`${URL_SERVER}/api/users`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+      const data = await res.json();
+      console.log("Data other users:", data);
+      if (!res.ok) {
+        throw new Error(data.message || 'Gagal mengambil data pengguna lain');
+      }
+      setOtherUsers(data);
+    } catch (error) {
+      console.error("Error fetching other users:", error);
+      alert("Gagal mengambil data pengguna lain. Silakan coba lagi.");
+    }
+  }
+
+  useEffect(() => {
+    if (loading) {
+      console.log("masih loading /");
+      return;
+    }
+
+    if (!accessToken || !user) {
+      console.log("refreshToken /home masih kosong");
+      router.replace('/login')
+    } else {
+      getOtherUsers();
+      console.log("getOtherUsers /home");
+      // Jika ada user, kita set currentUser
+      setCurrentUser(user as UserProfile); // Cast user to UserProfile
+      console.log("page1 verify200 user:", user, "accessToken di /:", accessToken,)
+      // cek apakah accessToken masih valid
+      // verifyRefreshToken(refreshToken)
+    }
+
+  }, [loading]);
+
+
+
+  const handleOpenTopUpModal = () => {
+    setIsTopUpModalOpen(true);
+  };
+
+  const handleCloseTopUpModal = () => {
+    setIsTopUpModalOpen(false);
+  };
+
+  const handleConfirmTopUp = async (amount: number) => {
+    setLoadingInteractive(true);
+    if (currentUser) {
+      console.log("Top up amount:", amount);
+      // top up di currentUser
+      try {
+        const res = await fetch(`${URL_SERVER}/api/users/${user?.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            saldo: currentUser.saldo + amount,
+          }),
+        });
+
+        const updatedUser = await res.json();
+
+        if (!res.ok) {
+          throw new Error(updatedUser.message || 'Gagal memperbarui saldo');
+        }
+
+        // add History
+        try {
+          const res = await fetch(`${URL_SERVER}/api/history`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`,
+            },
+            body: JSON.stringify({
+              userId: currentUser.id,
+              jumlah: amount,
+              jenis: "PEMASUKAN",
+              sumber: "TOPUP",
+              transaksiId: null,
+              waktu: new Date().toISOString(),
+            }),
+          });
+          const updatedHistory = await res.json();
+          if (!res.ok) {
+            throw new Error(updatedHistory.message || 'Gagal memperbarui history');
+          }
+          console.log("TOPUP : history added", updatedHistory);
+        } catch (error) {
+          console.error("Error updating history:", error);
+          alert("Gagal memperbarui history. Silakan coba lagi.");
+        }
+
+        // Update state dengan saldo baru
+        setCurrentUser({ ...currentUser, saldo: currentUser.saldo + amount });
+        alert(`Top up sejumlah Rp ${amount.toLocaleString('id-ID')} berhasil! Saldo baru Anda Rp ${(currentUser.saldo + amount).toLocaleString('id-ID')}`);
+      } catch (error) {
+        console.error("Error updating user saldo:", error);
+        alert("Gagal memperbarui saldo. Silakan coba lagi.");
+      }
+
+    }
+    setIsTopUpModalOpen(false);
+
+    setLoadingInteractive(false);
+  };
+
+  const handleOpenDonateModal = (user: UserProfile) => {
+    setSelectedUserForDonation(user);
+    setIsDonateModalOpen(true);
+  };
+
+  const handleCloseDonateModal = () => {
+    setSelectedUserForDonation(null);
+    setIsDonateModalOpen(false);
+  };
+
+  const handleConfirmDonation = async (amount: number, message: string, recipient: UserProfile,) => {
+    setLoadingInteractive(true);
+    if (currentUser && currentUser.saldo >= amount) {
+
+      // Menambahkan transaksi untuk masing-masing user
+      try {
+        const res = await fetch(`${URL_SERVER}/api/transaksi`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            pengirimId: currentUser.id,
+            penerimaId: recipient.id,
+            jumlahDonasi: amount,
+            pesanDonasi: message,
+          }),
+        });
+        const newTransaksi = await res.json();
+        if (!res.ok) {
+          throw new Error(newTransaksi.message || 'Gagal memperbarui history');
+        }
+        console.log("DONASI : transaksi added", newTransaksi);
+
+        setCurrentUser({ ...currentUser, saldo: currentUser.saldo - amount });
+        setOtherUsers((prevUsers) =>
+          prevUsers.map((user) =>
+            user.id === recipient.id ? { ...user, saldo: user.saldo + amount } : user
+          )
+        );
+
+      } catch (error) {
+        console.error("Error buat transaksi:", error);
+        alert("Gagal transaksi. Silakan coba lagi.");
+      }
+
+      alert(`Donasi sejumlah Rp ${amount.toLocaleString('id-ID')} kepada ${recipient.name} berhasil!`);
+      console.log(`Donasi: ${amount} dari ${currentUser.name} ke ${recipient.name}`);
+    } else {
+      alert('Saldo tidak mencukupi!');
+    }
+    setIsDonateModalOpen(false);
+    setSelectedUserForDonation(null);
+
+    setLoadingInteractive(false);
+  };
+
+  if (!currentUser || loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <p className="text-lg text-gray-600">Memuat data pengguna...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-screen bg-slate-200 text-slate-800 px-50">
+      <div className="flex-none mt-8 mb-8">
+        <h1 className="text-4xl font-bold text-center text-blue-400">
+          Donate App
+        </h1>
+      </div>
+      <div className="flex-1 flex flex-row rounded-xl bg-slate-300">
+
+        <div className="w-80  p-4">
+          <div className="flex flex-col">
+            <ProfileCard user={currentUser} />
+            <BalanceCard
+              balance={currentUser.saldo}
+              onTopUpClick={handleOpenTopUpModal}
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+
+        <div className="flex-1  p-4 overflow-y-auto">
+          <UserList
+            users={otherUsers}
+            onDonateClick={handleOpenDonateModal}
+            currentUser={currentUser}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        </div>
+
+        {/* Modals */}
+        <TopUpModal
+          isOpen={isTopUpModalOpen}
+          onClose={handleCloseTopUpModal}
+          onConfirm={handleConfirmTopUp}
+        />
+        <DonateModal
+          isOpen={isDonateModalOpen}
+          onClose={handleCloseDonateModal}
+          onConfirm={handleConfirmDonation}
+          recipient={selectedUserForDonation}
+          currentUserBalance={currentUser.saldo}
+        />
+
+
+      </div>
+      {loadingInteractive && <LoadingOverlay />}
     </div>
   );
 }
