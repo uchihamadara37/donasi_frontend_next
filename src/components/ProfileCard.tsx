@@ -146,6 +146,7 @@ const ProfileCard: React.FC<ProfileCardProps> = ({ user }) => {
         method: 'PUT',
         headers: { 'Authorization': `Bearer ${accessToken}` }, // Jika Anda menggunakan token di header
         body: formData, // FormData akan otomatis mengatur Content-Type
+        credentials: 'include', 
       });
 
       const result = await response.json();

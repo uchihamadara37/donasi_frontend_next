@@ -54,7 +54,8 @@ const UserList: React.FC<UserListProps> = ({ users, onDonateClick, currentUser }
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${accessToken}`, // Assuming you have an access token
-          }
+          },
+          credentials: 'include', 
         });
         if (!response.ok) {
           throw new Error('Failed to fetch transaction history');
@@ -79,7 +80,8 @@ const UserList: React.FC<UserListProps> = ({ users, onDonateClick, currentUser }
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${accessToken}`, // Assuming you have an access token
-          }
+          },
+          credentials: 'include', 
         });
         if (!response.ok) {
           throw new Error('Failed to fetch transaction history');

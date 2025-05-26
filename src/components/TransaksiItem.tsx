@@ -40,6 +40,7 @@ export const TransaksiItem: React.FC<{
                 body: JSON.stringify({
                     pesanDonasi: keterangan,
                 }),
+                credentials: 'include', 
             });
             if (!response.ok) {
                 throw new Error('Failed to fetch transaction history');
@@ -65,6 +66,7 @@ export const TransaksiItem: React.FC<{
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${accessToken}`, // Assuming you have an access token
                 },
+                credentials: 'include', 
             });
             if (!response.ok) {
                 throw new Error('Failed to delete transaction history');

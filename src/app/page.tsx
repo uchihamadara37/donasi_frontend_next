@@ -50,6 +50,7 @@ export default function Home() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${accessToken}`,
         },
+        credentials: 'include', // Pastikan untuk mengirim cookie
       });
       const data = await res.json();
       console.log("Data other users:", data);
@@ -104,6 +105,7 @@ export default function Home() {
           body: JSON.stringify({
             saldo: currentUser.saldo + amount,
           }),
+          credentials: 'include', 
         });
 
         const updatedUser = await res.json();
@@ -128,6 +130,7 @@ export default function Home() {
               transaksiId: null,
               waktu: new Date().toISOString(),
             }),
+            credentials: 'include', 
           });
           const updatedHistory = await res.json();
           if (!res.ok) {
@@ -181,6 +184,7 @@ export default function Home() {
             jumlahDonasi: amount,
             pesanDonasi: message,
           }),
+          credentials: 'include', 
         });
         const newTransaksi = await res.json();
         if (!res.ok) {
