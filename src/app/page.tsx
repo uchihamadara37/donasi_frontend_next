@@ -144,7 +144,7 @@ export default function Home() {
 
         // Update state dengan saldo baru
         setCurrentUser({ ...currentUser, saldo: currentUser.saldo + amount });
-        alert(`Top up sejumlah Rp ${amount.toLocaleString('id-ID')} berhasil! Saldo baru Anda Rp ${(currentUser.saldo + amount).toLocaleString('id-ID')}`);
+        alert(`Top up sejumlah Rp ${amount} berhasil! Saldo baru Anda Rp ${(currentUser.saldo + amount)}`);
       } catch (error) {
         console.error("Error updating user saldo:", error);
         alert("Gagal memperbarui saldo. Silakan coba lagi.");
@@ -204,7 +204,7 @@ export default function Home() {
         alert("Gagal transaksi. Silakan coba lagi.");
       }
 
-      alert(`Donasi sejumlah Rp ${amount.toLocaleString('id-ID')} kepada ${recipient.name} berhasil!`);
+      alert(`Donasi sejumlah Rp ${amount} kepada ${recipient.name} berhasil!`);
       console.log(`Donasi: ${amount} dari ${currentUser.name} ke ${recipient.name}`);
     } else {
       alert('Saldo tidak mencukupi!');

@@ -66,7 +66,7 @@ const DonateModal: React.FC<DonateModalProps> = ({
           className="w-full p-2 border border-gray-300 rounded-md mb-2 focus:ring-indigo-500 focus:border-indigo-500"
         />
         {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
-         <p className="text-xs text-gray-500 mb-3">Saldo Anda saat ini: Rp {currentUserBalance.toLocaleString('id-ID')}</p>
+         <p className="text-xs text-gray-500 mb-3">Saldo Anda saat ini: Rp {currentUserBalance}</p>
         <div className="flex justify-end space-x-2 mt-4">
           <button
             onClick={onClose}

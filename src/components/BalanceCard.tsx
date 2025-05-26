@@ -10,7 +10,7 @@ const BalanceCard: React.FC<BalanceCardProps> = ({ balance, onTopUpClick }) => {
     <div className="bg-white shadow-md rounded-lg p-6 mb-6">
       <h3 className="text-xl font-semibold text-gray-700 mb-2">Saldo Anda</h3>
       <p className="text-[20px] font-normal text-indigo-600 mb-4">
-        Rp {balance.toLocaleString('id-ID')}
+        Rp{balance}
       </p>
       <button
         onClick={onTopUpClick}
