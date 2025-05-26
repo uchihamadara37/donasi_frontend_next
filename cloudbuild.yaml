@@ -15,3 +15,6 @@ steps:
       - 'app'
       - 'deploy'
       - '--quiet'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
