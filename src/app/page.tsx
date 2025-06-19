@@ -109,6 +109,7 @@ export default function Home() {
           },
           body: JSON.stringify({
             saldo: currentUser.saldo + amount,
+            amount,
           }),
           credentials: 'include',
         });
