@@ -2,7 +2,7 @@
 "use client"
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react"
-import { BaseUser, UserProfile } from "@/interfaces" // Asumsi BaseUser structure is defined
+import { UserProfile } from "@/interfaces" // Asumsi BaseUser structure is defined
 
 
 type AuthContextType = {

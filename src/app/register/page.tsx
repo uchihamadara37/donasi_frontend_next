@@ -204,7 +204,7 @@ export default function RegisterPage() {
               {avatarPreview && (
                 <div className="mt-4 flex flex-col items-center">
                   <p className="text-sm text-gray-600 mb-2">Image Preview:</p>
-                  <Image src={avatarPreview} alt="Avatar Preview" className="w-24 h-24 object-cover rounded-full border border-gray-300 shadow-sm" />
+                  <Image src={avatarPreview} alt="Avatar Preview" className="w-24 h-24 object-cover rounded-full border border-gray-300 shadow-sm" width={20} height={20}/>
                 </div>
               )}
             </div>

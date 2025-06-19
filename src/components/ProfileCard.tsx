@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { BaseUser, UserProfile } from '@/interfaces'; // Asumsi UserProfile sudah ada dan memiliki 'avatar?: string | null;'
+import { UserProfile } from '@/interfaces';
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Settings, XCircle } from 'lucide-react'; // Import XCircle untuk tombol hapus avatar
+import { Settings, XCircle } from 'lucide-react';
 
 import { useAuth } from '@/context/authContext';
 import { useForm } from 'react-hook-form';
@@ -23,40 +23,97 @@ import { z } from 'zod';
 import LoadingOverlay from './LoadingOverlay';
 import Image from 'next/image';
 
-// Asumsi URL_SERVER sudah didefinisikan di .env.local
 import { URL_SERVER } from '@/interfaces';
-import { get } from 'http';
 
 // --- Zod Schema for Edit Profile Form ---
 const editProfileSchema = z.object({
-  name: z.string().min(1, "Nama tidak boleh kosong").optional(), // Nama bisa diupdate, tapi tidak boleh kosong jika ada
+  name: z.string().min(1, "Nama tidak boleh kosong").optional(),
   avatar: z
-    .any() // Multer expects a FileList, so use .any()
+    .any()
     .refine((file) => file?.length === 0 || file?.[0]?.type?.startsWith('image/'), "File harus berupa gambar")
     .optional(),
-  // Field tersembunyi untuk menandakan penghapusan avatar
   clearAvatar: z.boolean().optional().default(false),
+  // --- New: PIN fields ---
+  currentPin: z
+    .string()
+    .optional()
+    .or(z.literal(''))
+    .refine((val) => {
+      // If a newPin is provided, currentPin must be 6 digits and not empty
+      // Otherwise, currentPin is optional if no newPin is set
+      // This refinement will be further handled by .superRefine
+      return true;
+    }, { message: "PIN lama harus 6 digit angka" }),
+  newPin: z
+    .string()
+    .length(6, "PIN baru harus 6 digit angka")
+    .regex(/^\d+$/, "PIN baru harus berupa angka")
+    .optional()
+    .or(z.literal('')), // Allow empty string for optional behavior
+  confirmNewPin: z
+    .string()
+    .optional()
+    .or(z.literal('')), // Allow empty string for optional behavior
+}).superRefine((data, ctx) => {
+  // Custom validation for PIN
+  const hasNewPin = data.newPin && data.newPin !== '';
+  const hasCurrentPinInput = data.currentPin && data.currentPin !== '';
+
+  if (hasNewPin) {
+    // If a new PIN is provided, then currentPin is required
+    if (!hasCurrentPinInput) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "PIN lama diperlukan untuk mengubah PIN baru.",
+        path: ['currentPin'],
+      });
+    } else if (data.currentPin!.length !== 6 || !/^\d+$/.test(data.currentPin!)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "PIN lama harus 6 digit angka.",
+        path: ['currentPin'],
+      });
+    }
+
+    // New PIN and Confirm New PIN must match
+    if (data.newPin !== data.confirmNewPin) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Konfirmasi PIN baru tidak cocok dengan PIN baru.",
+        path: ['confirmNewPin'],
+      });
+    }
+  }
+
+  // If currentPin is provided, but newPin is not
+  if (hasCurrentPinInput && !hasNewPin) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Jika Anda memasukkan PIN lama, Anda harus memasukkan PIN baru.",
+      path: ['newPin'],
+    });
+  }
 });
+
 
 // --- Interface for Form Values ---
 interface EditProfileFormValues {
   name?: string;
   avatar?: FileList;
   clearAvatar?: boolean;
+  currentPin?: string; // New: Current PIN field
+  newPin?: string;    // New: New PIN field
+  confirmNewPin?: string; // New: Confirm New PIN field
 }
 
-// interface ProfileCardProps {
-//   user: UserProfile | null;
-// }
-
 const ProfileCard = () => {
-  const {logout, accessToken, refreshAccessTokenAndUser, user } = useAuth(); // Ambil accessToken dari context
-  const [isModalOpen, setIsModalOpen] = useState(false); // State untuk mengontrol buka/tutup modal
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null); // State untuk preview gambar
-  const [formError, setFormError] = useState<string | null>(null); // State untuk error form
-  const [formLoading, setFormLoading] = useState(false); // State untuk loading form
+  const { logout, accessToken, refreshAccessTokenAndUser, user } = useAuth();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formLoading, setFormLoading] = useState(false);
 
-  const [currentUser, setCurrentUser] = useState<BaseUser | null>(user); // Local state untuk user, bisa diupdate setelah edit
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(user);
 
   const [loadingInteractive, setLoadingInteractive] = useState(false);
 
@@ -65,95 +122,134 @@ const ProfileCard = () => {
     handleSubmit,
     setValue,
     watch,
-    reset, // Untuk mereset form saat modal ditutup
+    reset,
     formState: { errors },
   } = useForm<EditProfileFormValues>({
     resolver: zodResolver(editProfileSchema),
     defaultValues: {
-      name: currentUser?.name || '', // Set default name dari user prop
+      name: currentUser?.name || '',
       avatar: undefined,
       clearAvatar: false,
+      currentPin: '', // Always start empty for security
+      newPin: '',     // Always start empty
+      confirmNewPin: '', // Always start empty
     },
   });
 
-  const watchAvatar = watch("avatar"); // Memantau perubahan pada input avatar
-  const watchClearAvatar = watch("clearAvatar"); // Memantau state clearAvatar
+  const watchAvatar = watch("avatar");
+  const watchClearAvatar = watch("clearAvatar");
+  const watchNewPin = watch("newPin"); // Watch newPin for conditional validation/display
 
-  // Effect untuk mengatur default values saat user prop berubah atau modal dibuka
+
+  // Effect to set default values when user prop changes or modal opens
   useEffect(() => {
     if (isModalOpen && currentUser) {
       reset({
         name: currentUser.name || '',
-        avatar: undefined, // Reset avatar input
+        avatar: undefined,
         clearAvatar: false,
+        currentPin: '', // Always reset these to empty
+        newPin: '',
+        confirmNewPin: '',
       });
-      setAvatarPreview(currentUser.avatar || null); // Set preview ke avatar currentUser saat ini
-      setFormError(null); // Reset error
+      setAvatarPreview(currentUser.avatar || null);
+      setFormError(null);
     }
   }, [isModalOpen, currentUser, reset]);
 
-  // Effect untuk membuat URL preview saat file avatar berubah
+  // Effect to create preview URL when avatar file changes
   useEffect(() => {
     if (watchAvatar && watchAvatar.length > 0) {
       const file = watchAvatar[0];
       setAvatarPreview(URL.createObjectURL(file));
-      setValue('clearAvatar', false); // Jika user upload baru, batalkan clear avatar
-      return () => URL.revokeObjectURL(file.name); // Cleanup URL object
+      setValue('clearAvatar', false);
+      return () => URL.revokeObjectURL(file.name);
     } else if (!watchClearAvatar && currentUser?.avatar) {
-      // Jika tidak ada file baru diupload dan clearAvatar tidak aktif,
-      // tampilkan avatar user yang sudah ada
       setAvatarPreview(currentUser.avatar);
     } else if (watchClearAvatar) {
-      // Jika clearAvatar aktif, hapus preview
       setAvatarPreview(null);
     } else {
-      // Jika tidak ada avatar dan tidak ada yang diupload/dibersihkan
       setAvatarPreview(null);
     }
   }, [watchAvatar, watchClearAvatar, currentUser?.avatar, setValue]);
 
-  // Handler untuk menghapus avatar
+  // Handler to clear avatar
   const handleClearAvatar = useCallback(() => {
-    setValue('avatar', undefined); // Hapus file dari input form
-    setValue('clearAvatar', true); // Set flag untuk menghapus avatar di backend
-    setAvatarPreview(null); // Hapus preview
+    setValue('avatar', undefined);
+    setValue('clearAvatar', true);
+    setAvatarPreview(null);
   }, [setValue]);
 
   // Handler submit form edit profile
   const onSubmitEditProfile = async (data: EditProfileFormValues) => {
-    setLoadingInteractive(true); // Set loadingInteractive ke true saat mulai submit
+    setLoadingInteractive(true);
+    console.log('Submitting profile update with data:', data);
 
     setFormLoading(true);
     setFormError(null);
 
     const formData = new FormData();
-    // if (data.name !== user?.name && data.name !== undefined) { // Hanya tambahkan jika nama berubah
-    // }
-    formData.append('name', data.name!);
-    if (data.avatar && data.avatar.length > 0) {
-      formData.append('avatar', data.avatar[0]);
-    } else if (data.clearAvatar) {
-      formData.append('clearAvatar', 'true'); // Kirim flag ke backend untuk menghapus avatar
+    let hasChanges = false; // Track if any actual changes are made
+
+    if (data.name !== undefined) {
+      formData.append('name', data.name);
+      // hasChanges = true;
     }
 
-    if (formData.entries().next().done) { // Cek apakah formData kosong
-      setFormError("Tidak ada perubahan untuk disimpan.");
-      setFormLoading(false);
-      return;
+    console.log('Appending avatar to formData:', data.avatar && data.avatar[0]);
+    if (data.clearAvatar === false && data.avatar && data.avatar.length > 0) {
+      formData.append('avatar', data.avatar[0]);
+      // hasChanges = true;
+    } else if (data.clearAvatar) {
+      console.log('Clearing avatar in formData');
+      formData.append('clearAvatar', 'true'); // Indicate that we want to clear the avatar
+      // hasChanges = true;
+    } else {
+      console.log('No avatar change detected, not appending avatar to formData');
     }
+
+    // --- New: Append PIN fields if newPin is provided ---
+    if (data.newPin && data.newPin !== '') { // If new PIN is entered, send all PIN related data
+      formData.append('currentPin', data.currentPin || ''); // Send currentPin (empty if not entered by user)
+      formData.append('newPin', data.newPin);
+      formData.append('confirmNewPin', data.newPin);
+
+      // hasChanges = true;
+    } else {
+      // Edge case: User only enters currentPin but no newPin (Zod catches this but backend should handle gracefully)
+      // For now, we'll rely on Zod to prevent this, but robust backend should also validate.
+      console.log('Tidak ada pin baru');
+    }
+    console.log('Formdata ne mas before submission XX:', Object.fromEntries(formData.entries()));
+
+    // if (!hasChanges) {
+    //   setFormError("Tidak ada perubahan untuk disimpan.");
+    //   setFormLoading(false);
+    //   setLoadingInteractive(false);
+    //   return;
+    // }
 
     try {
+      console.log('Submitting profile update mas andre');
       const response = await fetch(`${URL_SERVER}/api/editProfile/${user?.id}`, {
         method: 'PUT',
-        headers: { 'Authorization': `Bearer ${accessToken}` }, // Jika Anda menggunakan token di header
-        body: formData, // FormData akan otomatis mengatur Content-Type
-        credentials: 'include', 
+        headers: { 'Authorization': `Bearer ${accessToken}` },
+        body: formData,
+        credentials: 'include',
       });
 
       const result = await response.json();
 
+      // Handle specific error for incorrect current PIN
+      if (response.status === 400 && result.error === 'Incorrect current PIN') {
+        setFormError("PIN lama Anda salah.");
+        return; // Stop execution here
+      }
+
       if (response.status === 403) {
-        refreshAccessTokenAndUser(); // Coba refresh token jika 403
+        await refreshAccessTokenAndUser();
+        setFormError("Sesi Anda berakhir. Silakan coba lagi.");
+        return;
       }
 
       if (!response.ok) {
@@ -161,25 +257,30 @@ const ProfileCard = () => {
       }
 
       console.log('Profile updated successfully:', result.user);
-      
-      // await refreshAccessTokenAndUser(); // Ini akan memicu update user di context
-      // login(accessToken!, result.user); // Update user di context dengan data terbaru
 
-      setCurrentUser(result.user); // Update user lokal dengan data terbaru
+      setCurrentUser(result.user);
 
-      setIsModalOpen(false); // Tutup modal
-      reset(); // Reset form setelah sukses (opsional, tergantung UX)
+      setIsModalOpen(false);
+      reset();
+      alert("Profil berhasil diperbarui!");
 
-    } catch (err: unknown ) {
-
+    } catch (err: unknown) {
       console.error("Error updating profile:", err);
-      setFormError("Terjadi kesalahan saat memperbarui profil. Cobalah menggunakan gambar berukuran lebih kecil");
+      if (err instanceof Error) {
+        setFormError(err.message); // Use the error message from throw new Error
+      } else {
+        setFormError("Terjadi kesalahan saat memperbarui profil. Silakan coba lagi.");
+      }
     } finally {
       setFormLoading(false);
-
-      setLoadingInteractive(false); // Set loadingInteractive ke false setelah selesai
+      setLoadingInteractive(false);
     }
   };
+
+  // Ensure currentUser is updated when user from context changes
+  useEffect(() => {
+    setCurrentUser(user);
+  }, [user]);
 
   if (!currentUser) {
     return <div className="text-center p-4">Memuat profil...</div>;
@@ -190,10 +291,12 @@ const ProfileCard = () => {
       <div className="flex flex-col items-center">
         {/* Avatar Display */}
         {currentUser.avatar ? (
-          <img
+          <Image
             src={currentUser.avatar}
             alt={currentUser.name}
             className="w-30 h-30 rounded-full object-cover mt-5"
+            width={120}
+            height={120}
           />
         ) : (
           <div className="w-16 h-16 rounded-full bg-gray-300 flex items-center justify-center text-white text-xl font-bold mt-5">
@@ -234,8 +337,8 @@ const ProfileCard = () => {
               </DialogHeader>
               <form onSubmit={handleSubmit(onSubmitEditProfile)} className="flex flex-col gap-2 py-4">
                 {/* Name Input */}
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="name" className="text-right w-50">
+                <div className="grid grid-cols-5 items-center gap-4">
+                  <Label htmlFor="name" className="text-right col-span-2">
                     Name
                   </Label>
                   <Input
@@ -246,9 +349,64 @@ const ProfileCard = () => {
                   {errors.name && <p className="col-span-4 text-right text-red-500 text-sm">{errors.name.message}</p>}
                 </div>
 
+                {/* --- PIN Section --- */}
+                {/* Current PIN Input (always visible when changing PIN) */}
+                <div className="grid grid-cols-5 items-center gap-4">
+                  <Label htmlFor="currentPin" className="text-right col-span-2">
+                    PIN Lama
+                  </Label>
+                  <Input
+                    id="currentPin"
+                    type="password"
+                    maxLength={6}
+                    {...register('currentPin')}
+                    className="col-span-3"
+                    placeholder="Masukkan PIN lama (jika ada)"
+                  />
+                  {errors.currentPin && <p className="col-span-4 text-right text-red-500 text-sm">{errors.currentPin.message}</p>}
+                </div>
+
+                {/* New PIN Input */}
+                <div className="grid grid-cols-5 items-center gap-4">
+                  <Label htmlFor="newPin" className="text-right  col-span-2">
+                    PIN Baru (6 digit)
+                  </Label>
+                  <Input
+                    id="newPin"
+                    type="password"
+                    maxLength={6}
+                    {...register('newPin')}
+                    className="col-span-3"
+                    placeholder="Biarkan kosong untuk tidak mengubah"
+                  />
+                  {errors.newPin && <p className="col-span-4 text-right text-red-500 text-sm">{errors.newPin.message}</p>}
+                </div>
+
+                {/* Confirm New PIN Input (only visible if newPin has a value) */}
+
+                <div className="grid grid-cols-5 items-center gap-4">
+                  <Label htmlFor="confirmNewPin" className="text-right col-span-2">
+                    Konfirmasi PIN Baru
+                  </Label>
+                  <Input
+                    id="confirmNewPin"
+                    type="password"
+                    maxLength={6}
+                    {...register('confirmNewPin')}
+                    className="col-span-3"
+                    placeholder="Konfirmasi PIN baru"
+                  />
+                  {errors.confirmNewPin && <p className="col-span-4 text-right text-red-500 text-sm">{errors.confirmNewPin.message}</p>}
+                </div>
+
+                {/* {!currentUser.pin && !watchNewPin && ( // Hint if no PIN set yet
+                  <p className="col-span-4 text-center text-gray-500 text-sm">Anda belum memiliki PIN. Masukkan PIN baru di atas.</p>
+                )} */}
+                {/* --- End PIN Section --- */}
+
                 {/* Avatar Input */}
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="avatar" className="text-right w-50">
+                <div className="grid grid-cols-5 items-center gap-4">
+                  <Label htmlFor="avatar" className="text-right col-span-2">
                     Avatar
                   </Label>
                   <Input
@@ -258,7 +416,7 @@ const ProfileCard = () => {
                     {...register('avatar')}
                     className="col-span-3"
                   />
-                  {errors.avatar && <p className="col-span-4 text-right text-red-500 text-sm">Cobalah menggunakan gambar yang ukurannya lebih kecil</p>}
+                  {errors.avatar && <p className="col-span-4 text-right text-red-500 text-sm">Ukuran gambar terlalu besar atau format tidak didukung</p>}
                 </div>
 
                 {/* Avatar Preview & Clear Button */}
@@ -268,13 +426,16 @@ const ProfileCard = () => {
                       src={avatarPreview || currentUser.avatar || ''}
                       alt="Avatar Preview"
                       className="w-24 h-24 rounded-full object-cover border border-gray-300 shadow-sm"
+                      width={96}
+                      height={96}
                     />
+
                     <Button
                       type="button"
                       variant="destructive"
                       size="sm"
                       onClick={handleClearAvatar}
-                      disabled={watchClearAvatar} // Disable if already marked for clearing
+                      disabled={watchClearAvatar}
                       className="flex items-center gap-1"
                     >
                       <XCircle className="h-4 w-4" /> Clear Avatar
@@ -283,9 +444,8 @@ const ProfileCard = () => {
                 )}
                 {/* Message for no avatar */}
                 {!avatarPreview && !currentUser.avatar && !watchClearAvatar && (
-                    <p className="col-span-4 text-center text-gray-500 text-sm">No avatar set.</p>
+                  <p className="col-span-4 text-center text-gray-500 text-sm">No avatar set.</p>
                 )}
-
 
                 {formError && (
                   <p className="col-span-4 text-center text-red-500 text-sm">{formError}</p>

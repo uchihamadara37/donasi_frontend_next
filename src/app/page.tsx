@@ -12,6 +12,9 @@ import TopUpModal from '@/components/TopUpModal';
 import DonateModal from '@/components/DonateModal';
 import LoadingOverlay from "@/components/LoadingOverlay";
 
+import WithdrawalCard from "@/components/WithdrawalCard"; // Import the new component
+import WithdrawalModal from "@/components/WithdrawalModal"; // Import the new modal
+
 import { URL_SERVER } from "@/interfaces";
 
 // Membuat UserProfile dari data API
@@ -31,6 +34,8 @@ export default function Home() {
   const [selectedUserForDonation, setSelectedUserForDonation] = useState<UserProfile | null>(null);
 
   const [loadingInteractive, setLoadingInteractive] = useState(false);
+
+  const [isWithdrawalModalOpen, setIsWithdrawalModalOpen] = useState(false); // New state for withdrawal modal
 
 
 
@@ -113,7 +118,6 @@ export default function Home() {
         if (!res.ok) {
           throw new Error(updatedUser.message || 'Gagal memperbarui saldo');
         }
-
         // add History
         try {
           const res = await fetch(`${URL_SERVER}/api/history`, {
@@ -215,6 +219,59 @@ export default function Home() {
     setLoadingInteractive(false);
   };
 
+  const handleOpenWithdrawalModal = () => {
+    setIsWithdrawalModalOpen(true);
+  };
+
+  const handleCloseWithdrawalModal = () => {
+    setIsWithdrawalModalOpen(false);
+  };
+
+  const handleConfirmWithdrawal = async (amount: number, method: string, detail?: string, accountNumber?: string, pin?: string) => {
+    setLoadingInteractive(true);
+    if (currentUser) {
+      console.log("Withdrawal amount:", amount, "Method:", method, "Detail:", detail, "Account:", accountNumber, "Pin:", pin);
+      if (currentUser.saldo < amount) {
+        alert('Saldo tidak mencukupi untuk penarikan ini.');
+        setLoadingInteractive(false);
+        return;
+      }
+
+      try {
+        const dataJson = JSON.stringify({
+          saldo: currentUser.saldo - amount,
+          pin: pin, // Pastikan untuk mengirim PIN jika diperlukan
+          amount: amount,
+        });
+        console.log("Withdrawal data JSON:", dataJson);
+        const res = await fetch(`${URL_SERVER}/api/users/${user?.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
+          },
+          body: dataJson,
+          credentials: 'include',
+        });
+
+        const updatedUser = await res.json();
+
+        if (!res.ok) {
+          throw new Error(updatedUser.error || 'Gagal memperbarui saldo untuk penarikan');
+        }
+
+
+        setCurrentUser({ ...currentUser, saldo: currentUser.saldo - amount });
+        alert(`Penarikan sejumlah Rp ${amount} berhasil! Saldo baru Anda Rp ${(currentUser.saldo - amount)}`);
+      } catch (error) {
+        console.error("Error processing withdrawal:", error);
+        alert("Gagal melakukan penarikan. Silakan coba lagi.");
+      }
+    }
+    setIsWithdrawalModalOpen(false);
+    setLoadingInteractive(false);
+  };
+
   if (!currentUser || loading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -238,6 +295,9 @@ export default function Home() {
             <BalanceCard
               balance={currentUser.saldo ?? 0}
               onTopUpClick={handleOpenTopUpModal}
+            />
+            <WithdrawalCard
+              onWithdrawClick={handleOpenWithdrawalModal}
             />
           </div>
         </div>
@@ -263,7 +323,12 @@ export default function Home() {
           recipient={selectedUserForDonation}
           currentUserBalance={currentUser.saldo}
         />
-
+        <WithdrawalModal
+          isOpen={isWithdrawalModalOpen}
+          onClose={handleCloseWithdrawalModal}
+          onConfirm={handleConfirmWithdrawal}
+          currentBalance={currentUser.saldo ?? 0}
+        />
 
       </div>
       {loadingInteractive && <LoadingOverlay />}
