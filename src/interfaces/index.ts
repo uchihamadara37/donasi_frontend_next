@@ -45,5 +45,5 @@ export interface Transaksi {
   lihatRiwayat: () => Transaksi[]; // Fungsi untuk melihat riwayat transaksi
 }
 
-// export const URL_SERVER="https://donasi-backend-948060519163.asia-southeast2.run.app"
-export const URL_SERVER="http://localhost:3000"
+export const URL_SERVER="https://donasi-backend-948060519163.asia-southeast2.run.app"
+// export const URL_SERVER="http://localhost:3000"

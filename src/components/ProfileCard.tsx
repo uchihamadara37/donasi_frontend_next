@@ -210,7 +210,7 @@ const ProfileCard = () => {
 
     // --- New: Append PIN fields if newPin is provided ---
     if (data.newPin && data.newPin !== '') { // If new PIN is entered, send all PIN related data
-      formData.append('currentPin', data.currentPin || ''); // Send currentPin (empty if not entered by user)
+      formData.append('currentPin', data.currentPin ?? ''); // Send currentPin as string (empty if not entered by user)
       formData.append('newPin', data.newPin);
       formData.append('confirmNewPin', data.newPin);
 
